@@ -79,16 +79,16 @@ variables = rmdups . go where
 -- truth valuations
 type Valuation = VarName -> Bool
 
--- the evaluation function (TODO)
+-- the evaluation function
 eval :: Formula -> Valuation -> Bool
-eval T rho = undefined
-eval F rho = undefined
-eval (Var x) rho = undefined
-eval (Not phi) rho = undefined
-eval (And phi psi) rho = undefined
-eval (Or phi psi) rho = undefined
-eval (Implies phi psi) rho = undefined
-eval (Iff phi psi) rho = undefined
+eval T rho = True
+eval F rho = False
+eval (Var x) rho = rho x
+eval (Not phi) rho = not $ eval phi rho
+eval (And phi psi) rho = eval phi rho && eval psi rho
+eval (Or phi psi) rho = eval phi rho || eval psi rho
+eval (Implies phi psi) rho = (not $ eval phi rho) || eval psi rho
+eval (Iff phi psi) rho = eval phi rho == eval psi rho
 
 -- updating a truth valuation
 extend :: Valuation -> VarName -> Bool -> Valuation
@@ -96,23 +96,24 @@ extend rho x v y
   | x == y = v
   | otherwise = rho y
 
--- the list of all valuations on a given list of variables (TODO)
+-- the list of all valuations on a given list of variables
 valuations :: [VarName] -> [Valuation]
-valuations [] = undefined
-valuations (x : xs) = undefined
+valuations [] = [\v -> False]
+valuations (x : xs) = map (\val -> extend val x True) vals ++ vals where
+  vals = valuations xs
 
 -- check that all valuations are returned
 prop_valuations :: [VarName] -> Property
 prop_valuations xs = length xs <= 5 ==> length (valuations xs) == 2^length xs
 
--- satisfiability checker based on truth tables (TODO)
+-- satisfiability checker based on truth tables
 -- our first (trivial) sat solver
 satisfiable :: Formula -> Bool
-satisfiable phi = undefined
+satisfiable phi =  any (\rho -> eval phi rho) (valuations $ variables phi)
 
--- tautology checker based on truth tables (TODO)
+-- tautology checker based on truth tables
 tautology :: Formula -> Bool
-tautology phi = undefined
+tautology phi = all (\rho -> eval phi rho) (valuations $ variables phi)
 
 -- =============== formula simpification
 
@@ -170,6 +171,7 @@ prop_deep_simplify phi = tautology $ Iff phi (simplify phi)
 
 -- negation normal form (negation is only applied to variables)
 -- Question: What is complexity of this transformation in terms of formula size?
+-- TODO
 nnf :: Formula -> Formula
 nnf = undefined
 
@@ -202,6 +204,7 @@ opposite (Neg p) = Pos p
 
 -- transform a formula to equivalent dnf (exponential)
 dnf :: Formula -> [[Literal]]
+-- TODO
 dnf phi = go $ nnf phi where
   go T = undefined
   go F = undefined
@@ -239,7 +242,7 @@ type SatSolver = Formula -> Bool
 -- Question: Considering that Haskell has a lazy evaluation strategy, what is the performance of "sat_dnf" vs. "satisfiable" (based on truth tables)?
 -- Question: What is the performance of "sat_dnf" on unsatisfiable formulas?
 sat_dnf :: SatSolver
-sat_dnf = undefined
+sat_dnf = undefined  -- TODO
 
 -- tests on random formulas
 prop_sat_dnf :: Formula -> Bool
@@ -279,7 +282,7 @@ hard_unsat_formula = (Not (((x_1_2 ∧ (x_1_3 ∧ x_2_3)) ∨ ((x_1_2 ∧ (x_1_4
 -- m: size of clique
 -- n: size of anticlique (independent set)
 ramsey :: Int -> Int -> Int
-ramsey m n = undefined
+ramsey m n = undefined -- TODO
 
 -- simple sanity checks on very small ramsey numbers
 prop_ramsey1 :: Int -> Property
