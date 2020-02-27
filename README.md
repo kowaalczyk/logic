@@ -1,5 +1,15 @@
 # Logic
 
+Lab & assignment descriptions are available [here](https://lclem.github.io/logic_course/).
+
+
+## Running labs
+
+```
+stack run labXX
+```
+
+
 ## Adding new labs
 
 1. Copy directory labXX to the project root
