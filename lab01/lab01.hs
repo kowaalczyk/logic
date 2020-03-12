@@ -171,9 +171,19 @@ prop_deep_simplify phi = tautology $ Iff phi (simplify phi)
 
 -- negation normal form (negation is only applied to variables)
 -- Question: What is complexity of this transformation in terms of formula size?
--- TODO
 nnf :: Formula -> Formula
-nnf = undefined
+nnf (Iff phi psi) = nnf (And (Implies phi psi) (Implies psi phi))
+nnf (Not (Iff phi psi)) = nnf (Or (Not (Implies phi psi)) (Not (Implies psi phi)))
+nnf (Implies phi psi) = nnf (Or (Not phi) psi)
+nnf (Not(Implies phi psi)) = nnf (And phi (Not psi))
+nnf (Not (Or phi psi)) = nnf (And (Not phi) (Not psi))
+nnf (Not (And phi psi)) = nnf (Or (Not phi) (Not psi))
+nnf (Not (Not phi)) = nnf phi
+nnf (Not T) = F
+nnf (Not F) = T
+nnf (Or phi psi) = Or (nnf phi) (nnf psi)
+nnf (And phi psi) = And (nnf phi) (nnf psi)
+nnf f = f
 
 -- checks that the input is in nnf
 is_nnf :: Formula -> Bool
@@ -204,14 +214,16 @@ opposite (Neg p) = Pos p
 
 -- transform a formula to equivalent dnf (exponential)
 dnf :: Formula -> [[Literal]]
--- TODO
 dnf phi = go $ nnf phi where
-  go T = undefined
-  go F = undefined
-  go (Var x) = undefined
-  go (Not (Var x)) = undefined
-  go (Or phi psi) = undefined
-  go (And phi psi) = undefined
+  go T = [[]]
+  go F = [[Pos "F", Neg "F"]]
+  go (Var x) = [[Pos x]]
+  go (Not (Var x)) = [[Neg x]]
+  go (Or phi psi) = (go phi) ++ (go psi)
+  go (And phi psi) = combine (go phi) (go psi) []
+  combine :: [[Literal]] -> [[Literal]] -> [[Literal]] -> [[Literal]]
+  combine ls [] total = total
+  combine ls (r:rs) total = combine ls rs total++(map (\l -> (++) l r) ls)  
 
 dnf2formula :: [[Literal]] -> Formula
 dnf2formula [] = F
