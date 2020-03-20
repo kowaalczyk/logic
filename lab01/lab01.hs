@@ -4,6 +4,7 @@ module Main where
 
 import Control.Monad
 import Data.List
+import Data.List.Extra
 import Test.QuickCheck
 import Utils
 
@@ -254,7 +255,9 @@ type SatSolver = Formula -> Bool
 -- Question: Considering that Haskell has a lazy evaluation strategy, what is the performance of "sat_dnf" vs. "satisfiable" (based on truth tables)?
 -- Question: What is the performance of "sat_dnf" on unsatisfiable formulas?
 sat_dnf :: SatSolver
-sat_dnf = undefined  -- TODO
+sat_dnf phi = any is_satisfiable (dnf phi) where
+  is_satisfiable [] = True
+  is_satisfiable ls = disjoint (positive_literals ls) (negative_literals ls)
 
 -- tests on random formulas
 prop_sat_dnf :: Formula -> Bool
