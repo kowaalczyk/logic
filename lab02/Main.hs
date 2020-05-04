@@ -210,7 +210,26 @@ cnf phi = go $ nnf phi where
 -- - Concatenate all the cnfs psi_phi for every subformula phi.
 -- - See slide #5 of https://github.com/lclem/logic_course/blob/master/docs/slides/03-resolution.pdf
 ecnf :: Formula -> CNF
-ecnf = undefined
+ecnf phi = cnf topVar ++ formula where
+  (_, topVar, formula) = go (nnf phi) 0  -- todo: make sure nnf is ok to do (no exponential blowup)
+  go :: Formula -> Int -> (Int, Formula, CNF)
+  go T v = (v, T, [])
+  go F v = (v, F, [])
+  go (Var x) v = (v, Var x, [])
+  go (Not (Var x)) v = (v, Not (Var x), [])
+  go (And phi psi) v = (v3, var3, cnf (Iff var3 (And var1 var2)) ++ ephi ++ epsi) where
+    (v1, var1, ephi) = go phi v
+    (v2, var2, epsi) = go psi v1
+    v3 = succ v2
+    var3 = makeVar v3
+  go (Or phi psi) v = (v3, var3, cnf (Iff var3 (Or var1 var2)) ++ ephi ++ epsi) where
+    (v1, var1, ephi) = go phi v
+    (v2, var2, epsi) = go psi v1
+    v3 = succ v2
+    var3 = makeVar v3
+  makeVar :: Int -> Formula
+  makeVar v = Var ("__" ++ show v)
+
 
 equiSatisfiable :: Formula -> Formula -> Bool
 equiSatisfiable phi psi = satisfiable phi == satisfiable psi
