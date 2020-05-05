@@ -201,7 +201,6 @@ cnf phi = go $ nnf phi where
   go (And phi psi) = go phi ++ go psi
   go (Or phi psi) = distribute (go phi) (go psi)
 
--- TODO
 -- transform a formula to equi-satisfiable cnf (linear complexity)
 -- there is no assumption on the input formula
 -- Hints:
@@ -283,7 +282,6 @@ literals ls = rmdups $ positiveLiterals ls ++ negativeLiterals ls
 removeTautologies :: CNF -> CNF
 removeTautologies lss = undefined
 
--- TODO
 -- One literal rule (aka unit propagation):
 -- A one-literal clause [... [l] ...] can be removed
 -- Hint: Remove [l] and all clauses containing l
@@ -291,7 +289,28 @@ removeTautologies lss = undefined
 -- Hint: Remove any empty clause [... [] ...] arising from this process
 -- see slide #6 of https://github.com/lclem/logic_course/blob/master/docs/slides/03-resolution.pdf
 oneLiteral :: CNF -> CNF
-oneLiteral lss = undefined
+oneLiteral cls = foldr propagate cls (foldr units [] cls) where
+  units :: Clause -> [Literal] -> [Literal]
+  units [l] lits = (l:lits)
+  units _ lits = lits
+  propagate :: Literal -> CNF -> CNF
+  propagate l cls = foldr go [] cls where
+    go :: Clause -> CNF -> CNF
+    go clause simplified = case (sameSign l clause, oppositeSign l clause) of
+      (True, True) -> simplified -- tautology
+      (True, False) -> simplified -- clause simplified-out
+      (False, True) -> (newClause:simplified)  -- negative variable is removed
+        where newClause = filter (\lit -> varName lit /= varName l) clause
+      (False, False) -> (clause:simplified) -- nothing to simplify
+    varName :: Literal -> VarName
+    varName (Pos var) = var
+    varName (Neg var) = var
+    sameSign :: Literal -> Clause -> Bool
+    sameSign (Pos var) clause = elem var $ positiveLiterals clause
+    sameSign (Neg var) clause = elem var $ negativeLiterals clause
+    oppositeSign :: Literal -> Clause -> Bool
+    oppositeSign (Pos var) clause = elem var $ negativeLiterals clause
+    oppositeSign (Neg var) clause = elem var $ positiveLiterals clause
 
 -- correctness test
 prop_oneLiteral :: Bool
@@ -321,14 +340,17 @@ prop_affirmativeNegative =
 loopDP :: CNF -> Bool
 loopDP [] = True -- if the CNF is empty, then it is satisfiable
 loopDP lss | [] `elem` lss = False -- if there is an empty clause, then the CNF is not satisfiable
-loopDP lss =
-  -- apply one round of simplification by removing tautologies, applying the one-literal rule, and the affirmativeNegative rule
-  let lss' = rmdups . map rmdups . affirmativeNegative . oneLiteral . removeTautologies $ lss in
+loopDP lss = let lss' = rmdups (map rmdups (oneLiteral lss)) in
     if lss == lss'
-      -- if the CNF didn't change, then do a resolution step (expensive)
-      then loopDP $ resolution lss
-      -- if the CNF did change, then do another round of simplifications recursively
+      then loopDP ([Pos . head $ literals (head lss)]:lss) || loopDP ([Neg . head $ literals (head lss)]:lss)
       else loopDP lss'
+  -- -- apply one round of simplification by removing tautologies, applying the one-literal rule, and the affirmativeNegative rule
+  -- let lss' = rmdups . map rmdups . affirmativeNegative . oneLiteral . removeTautologies $ lss in
+  --   if lss == lss'
+  --     -- if the CNF didn't change, then do a resolution step (expensive)
+  --     then loopDP $ resolution lss
+  --     -- if the CNF did change, then do another round of simplifications recursively
+  --     else loopDP lss'
 
 -- the DP SAT solver
 satDP :: SatSolver
